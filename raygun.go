@@ -21,8 +21,14 @@ func CaptureError(err error) {
 	GlobalCollector.CaptureError(err)
 }
 
-func CapturePanic() func() {
-	return GlobalCollector.CapturePanic()
+func CapturePanic() {
+	if rec := recover(); rec != nil {
+		if err, ok := rec.(error); ok {
+			GlobalCollector.CaptureError(err)
+		} else {
+			GlobalCollector.CaptureMessage(rec.(string))
+		}
+	}
 }
 
 func CaptureMessage(msg string) {

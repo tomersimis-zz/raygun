@@ -81,14 +81,12 @@ func (c *Collector) CaptureError(err error) {
 	c.CaptureMessage(err.Error())
 }
 
-func (c *Collector) CapturePanic() func() {
-	return func() {
-		if rec := recover(); rec != nil {
-			if err, ok := rec.(error); ok {
-				c.CaptureError(err)
-			} else {
-				c.CaptureMessage(rec.(string))
-			}
+func (c *Collector) CapturePanic() {
+	if rec := recover(); rec != nil {
+		if err, ok := rec.(error); ok {
+			c.CaptureError(err)
+		} else {
+			c.CaptureMessage(rec.(string))
 		}
 	}
 }
