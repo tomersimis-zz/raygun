@@ -7,7 +7,7 @@ import (
 const RaygunEndpoint = "https://api.raygun.io"
 const ClientName = "Raygun Go"
 const ClientVersion = "0.1"
-const ClientURL = "http://bitbucket.org/ubeedev/engage"
+const ClientURL = "http://github.com/tomersimis/raygun"
 
 var PackageName = reflect.TypeOf(Collector{}).PkgPath()
 
