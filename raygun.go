@@ -9,11 +9,11 @@ const ClientName = "Raygun Go"
 const ClientVersion = "0.1"
 const ClientURL = "http://github.com/tomersimis/raygun"
 
-var PackageName = reflect.TypeOf(Collector{}).PkgPath()
+var PackageName = reflect.TypeOf(NoopCollector{}).PkgPath()
 
-var GlobalCollector *Collector
+var GlobalCollector Collector = &NoopCollector{}
 
-func SetGlobalCollector(collector *Collector) {
+func SetGlobalCollector(collector Collector) {
 	GlobalCollector = collector
 }
 
@@ -40,5 +40,8 @@ func Capture(ray Ray) {
 }
 
 func Wait() {
-	GlobalCollector.Wait()
+	switch c := GlobalCollector.(type) {
+	case *RaygunCollector:
+		c.Wait()
+	}
 }

@@ -10,7 +10,14 @@ import (
 	"time"
 )
 
-type Collector struct {
+type Collector interface {
+	Capture(Ray)
+	CaptureError(error)
+	CaptureMessage(string)
+	CapturePanic()
+}
+
+type RaygunCollector struct {
 	AppName   string
 	ApiKey    string
 	Workers   int
@@ -22,29 +29,29 @@ type Collector struct {
 	wg     sync.WaitGroup
 }
 
-type CollectorConfig func(*Collector)
+type RaygunCollectorConfig func(*RaygunCollector)
 
-func Workers(n int) CollectorConfig {
-	return func(c *Collector) {
+func Workers(n int) RaygunCollectorConfig {
+	return func(c *RaygunCollector) {
 		c.Workers = n
 	}
 }
 
-func QueueSize(n int) CollectorConfig {
-	return func(c *Collector) {
+func QueueSize(n int) RaygunCollectorConfig {
+	return func(c *RaygunCollector) {
 		c.QueueSize = n
 	}
 }
 
-func Logger(logger *log.Logger) CollectorConfig {
-	return func(c *Collector) {
+func Logger(logger *log.Logger) RaygunCollectorConfig {
+	return func(c *RaygunCollector) {
 		c.Logger = logger
 	}
 }
 
-func NewCollector(appName, apiKey string, options ...CollectorConfig) *Collector {
+func NewCollector(appName, apiKey string, options ...RaygunCollectorConfig) Collector {
 
-	collector := &Collector{
+	collector := &RaygunCollector{
 		AppName:   appName,
 		ApiKey:    apiKey,
 		Workers:   1,
@@ -72,16 +79,16 @@ func NewCollector(appName, apiKey string, options ...CollectorConfig) *Collector
 	return collector
 }
 
-func (c *Collector) CaptureMessage(msg string) {
+func (c *RaygunCollector) CaptureMessage(msg string) {
 	c.queue <- NewRay(msg)
 	c.wg.Add(1)
 }
 
-func (c *Collector) CaptureError(err error) {
+func (c *RaygunCollector) CaptureError(err error) {
 	c.CaptureMessage(err.Error())
 }
 
-func (c *Collector) CapturePanic() {
+func (c *RaygunCollector) CapturePanic() {
 	if rec := recover(); rec != nil {
 		if err, ok := rec.(error); ok {
 			c.CaptureError(err)
@@ -91,12 +98,12 @@ func (c *Collector) CapturePanic() {
 	}
 }
 
-func (c *Collector) Capture(ray Ray) {
+func (c *RaygunCollector) Capture(ray Ray) {
 	c.queue <- ray
 	c.wg.Add(1)
 }
 
-func (c *Collector) start() {
+func (c *RaygunCollector) start() {
 	for i := 0; i < c.Workers; i++ {
 		go func() {
 			for {
@@ -124,6 +131,16 @@ func (c *Collector) start() {
 	}
 }
 
-func (c *Collector) Wait() {
+func (c *RaygunCollector) Wait() {
 	c.wg.Wait()
 }
+
+type NoopCollector struct{}
+
+func (c *NoopCollector) CaptureMessage(msg string) {}
+
+func (c *NoopCollector) CaptureError(err error) {}
+
+func (c *NoopCollector) CapturePanic() {}
+
+func (c *NoopCollector) Capture(ray Ray) {}
