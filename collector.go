@@ -12,8 +12,8 @@ import (
 
 type Collector interface {
 	Capture(Ray)
-	CaptureError(error)
-	CaptureMessage(string)
+	CaptureError(error, ...CaptureOption)
+	CaptureMessage(string, ...CaptureOption)
 	CapturePanic()
 }
 
@@ -79,13 +79,37 @@ func NewCollector(appName, apiKey string, options ...RaygunCollectorConfig) Coll
 	return collector
 }
 
-func (c *RaygunCollector) CaptureMessage(msg string) {
-	c.queue <- NewRay(msg)
+type CaptureOption func(*Ray)
+
+func WithUser(id string) CaptureOption {
+	return func(ray *Ray) {
+		ray.Details.User.Identifier = id
+	}
+}
+
+func WithTags(tags []string) CaptureOption {
+	return func(ray *Ray) {
+		ray.Details.Tags = tags
+	}
+}
+
+func WithCustomData(data interface{}) CaptureOption {
+	return func(ray *Ray) {
+		ray.Details.UserCustomData = data
+	}
+}
+
+func (c *RaygunCollector) CaptureMessage(msg string, opts ...CaptureOption) {
+	ray := NewRay(msg)
+	for _, f := range opts {
+		f(&ray)
+	}
+	c.queue <- ray
 	c.wg.Add(1)
 }
 
-func (c *RaygunCollector) CaptureError(err error) {
-	c.CaptureMessage(err.Error())
+func (c *RaygunCollector) CaptureError(err error, opts ...CaptureOption) {
+	c.CaptureMessage(err.Error(), opts...)
 }
 
 func (c *RaygunCollector) CapturePanic() {
@@ -137,10 +161,10 @@ func (c *RaygunCollector) Wait() {
 
 type NoopCollector struct{}
 
-func (c *NoopCollector) CaptureMessage(msg string) {}
+func (c *NoopCollector) CaptureMessage(_ string, _ ...CaptureOption) {}
 
-func (c *NoopCollector) CaptureError(err error) {}
+func (c *NoopCollector) CaptureError(_ error, _ ...CaptureOption) {}
 
 func (c *NoopCollector) CapturePanic() {}
 
-func (c *NoopCollector) Capture(ray Ray) {}
+func (c *NoopCollector) Capture(_ Ray) {}

@@ -17,8 +17,8 @@ func SetGlobalCollector(collector Collector) {
 	GlobalCollector = collector
 }
 
-func CaptureError(err error) {
-	GlobalCollector.CaptureError(err)
+func CaptureError(err error, opts ...CaptureOption) {
+	GlobalCollector.CaptureError(err, opts...)
 }
 
 func CapturePanic() {
@@ -31,8 +31,8 @@ func CapturePanic() {
 	}
 }
 
-func CaptureMessage(msg string) {
-	GlobalCollector.CaptureMessage(msg)
+func CaptureMessage(msg string, opts ...CaptureOption) {
+	GlobalCollector.CaptureMessage(msg, opts...)
 }
 
 func Capture(ray Ray) {
