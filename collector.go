@@ -148,7 +148,10 @@ func (c *RaygunCollector) start() {
 					c.Logger.Printf("raygun: request failed: %s", err.Error())
 				}
 
-				res.Body.Close()
+				if res != nil {
+					res.Body.Close()
+				}
+
 				c.wg.Done()
 			}
 		}()
